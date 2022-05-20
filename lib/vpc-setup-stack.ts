@@ -17,10 +17,10 @@ export class VpcSetupStack extends Stack {
 
                 // If you want to control costs, you can reduce the number of zones with the maxAzs config parameter.
                 // I sometimes do this in non-prod envs.
-                
+
                 // CDK sets up NAT Gateways, and all of the network routing to enable private subnets to
                 // access the Internet (e.g. to make outbound API calls).
-                
+
                 // Best practice here is that only load balancers should be in the public subnets. All of your
                 // Lambda functions, Fargate instances etc., should be in the private subnet.
 
@@ -78,10 +78,10 @@ export class VpcSetupStack extends Stack {
                 })
 
                 // Add flow logs.
-                
+
                 // If your service is attacked, you can use flow logs to determine what outbound or inbound IP
                 // addresses were used, and also determine the quantity of data extracted etc.
-                
+
                 // You might copy these outside of the account for a backup, since an attacker might
                 // delete them.
 
@@ -101,7 +101,7 @@ export class VpcSetupStack extends Stack {
                 })
 
                 // Create VPC endpoints for common services.
-                
+
                 // This reduces the internet traffic (NAT Gateway costs), and improves security, since
                 // your data is not mixing with public Internet traffic.
 
@@ -119,5 +119,28 @@ export class VpcSetupStack extends Stack {
                         exportName: "shared-vpc-id",
                         value: vpc.vpcId,
                 })
+
+                // Finally, there's some stuff that CDK (and AWS generally) gets wrong.
+
+                // Any VPC you create will have default security groups added which allow egress.
+                // These immediately show up on AWS's own security tooling (AWS Security Hub etc.)
+
+                // CDK can't modify these, whereas Terraform has a special resource for it:
+
+                // resource "aws_default_security_group" "default" {
+                //  vpc_id = aws_vpc.controltowervpc.id
+                //
+                //  ingress {
+                //    //none
+                //  }
+                //
+                //  egress {
+                //    //none
+                //  }
+                // }
+
+                // So, I built a program to fix up VPCs automatically by removing these default rules.
+
+                // https://github.com/a-h/default-security-group-tightener/blob/main/main.go
         }
 }
